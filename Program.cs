@@ -1,6 +1,7 @@
 using dating_app_backend.src.DB;
 using dating_app_backend.src.Service;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,8 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(buil
 builder.Services.AddSwaggerGen(c =>     
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Dating Api", Version = "v1" });
+    c.MapType<IFormFile>(() => new OpenApiSchema { Type = "string", Format = "binary" });
+
 });
 
 var app = builder.Build();
@@ -37,6 +40,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Upload/images")),
+    RequestPath = "/Upload/images"
+});
 
 app.UseCors("AllowAll");
 

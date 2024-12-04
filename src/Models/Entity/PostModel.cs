@@ -38,7 +38,11 @@ namespace dating_app_backend.src.Models.Entity
         public string? Location { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedDate { get; set; }
+        
+        [ForeignKey(nameof(UserId))]
+        public UserModel User { get; set; } = null!;
+        public List<CommentModel> Comments { get; set; } = new List<CommentModel>();
+        public List<LikesModel> Likes { get; set; } = new List<LikesModel>();
 
-        public UserModel User { get; set; }
     }
 }

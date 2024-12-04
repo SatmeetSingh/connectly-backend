@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections;
 
 namespace dating_app_backend.src.Controllers
 {
@@ -67,12 +68,40 @@ namespace dating_app_backend.src.Controllers
             try
             {
                 var newUser = await _userService.LoginUser(userDto);
-                return Ok(new { message = "User logged in Successfully" });
+                return Ok(new { message = "User logged in Successfully" , user = newUser  });
             }
-            catch (DbUpdateException ex)
+            catch (KeyNotFoundException) {
+                     return NotFound();
+            }
+            catch (UnauthorizedAccessException )
             {
-                return StatusCode(500, "An error occurred: " + ex.Message);
+                return Unauthorized(new Hashtable()  {
+                    { "status" , 401 },
+                    { "message", "Incorrect password. Please try again." }
+                });
             }
         }
+
+        [HttpPatch("update/{id}")]
+        public async Task<IActionResult> Updateuser([FromForm] UpdateUserDto updateDto , Guid id) {
+            try
+            {
+                var User = await _userService.UpdateUser(updateDto , id);
+                if (id ==    Guid.Empty)
+                {
+                    return BadRequest(new { error = "Invalid or missing ID." });
+                }   
+                if(User == null)
+                {
+                    return NotFound(new { error = "User with the specified ID was not found." });
+                }
+                return Ok(new { message = "User logged in Successfully", user = User });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "An error occurred while processing your request. Please try again later." });
+            }
+
+        }
     }
-}
+}       

@@ -9,6 +9,12 @@ using System.Data.Common;
 using Azure;
 using Azure.Core;
 
+/*
+ *  _context refers to an instance of your Entity Framework DbContext. 
+ *  It is used to interact with the database through various DbSets that represent tables in the database. 
+ *  Typically, _context is used to query, update, and save data to a database.
+ */
+
 namespace dating_app_backend.src.Service
 {
 
@@ -17,7 +23,7 @@ namespace dating_app_backend.src.Service
         public readonly AppDbContext _context;
         public UserService(AppDbContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));   
         }
 
         public async Task<List<UserModel>> GetAllUsers()
@@ -45,26 +51,76 @@ namespace dating_app_backend.src.Service
                  Email = userDto.Email,
                  Password = HashPassword(userDto.Password)
              };
-
-             _context.Users.Add(User);
+            _context.Users.Add(User);
              await _context.SaveChangesAsync();
              return User;        
         }
-
+        
         public async Task<UserModel> LoginUser(LoginDto loginDto)
         {
-           var user =await GetUserByEmail(loginDto.Email);
-            if(user.Password.Equals(HashPassword(loginDto.Password)) ) {
+            var user = await GetUserByEmail(loginDto.Email); 
+            if (user == null)
+            {
+                throw new KeyNotFoundException("user does not match");
+            }
+            if (BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password)) {
                 return user;
             } else
             {
-                throw new UnauthorizedAccessException("Invalid email or password.");
+                throw new UnauthorizedAccessException("Incorrect Password, Please try again.");
             }
         }
 
-        public async Task<UserModel> GetUserByEmail(string Email) {
-            return await _context.Users.FirstOrDefaultAsync(e => e.Email.Equals(Email));
+        public async Task<UserModel> UpdateUser([FromForm] UpdateUserDto updateDto ,Guid id) {
+            var user = await GetUserById(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("user does not match");
+            }
+
+            if (!string.IsNullOrEmpty(updateDto.Name))
+            {
+                user.Name = updateDto.Name;
+            }
+
+            if (!string.IsNullOrEmpty(updateDto.Username))
+            {
+                user.Username = updateDto.Username;
+            }
+
+            if (!string.IsNullOrEmpty(updateDto.Bio))
+            {
+                user.Bio = updateDto.Bio;
+            }
+
+            if (!string.IsNullOrEmpty(updateDto.Gender))
+            {
+                user.Gender = updateDto.Gender;
+            }
+
+            user.UpdatedDate = DateTime.UtcNow;
+
+            if (updateDto.file != null)
+            {
+                var fileService = new FileService();
+                var filePath = await fileService.SaveFileAsync(updateDto.file);
+                user.ProfilePicture = filePath; 
+            }
+
+            await _context.SaveChangesAsync();
+            return user;
         }
+
+        public async Task<UserModel> GetUserByEmail(string email) {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new ArgumentException("Email cannot be null or empty", nameof(email));
+            }
+            
+            var user =  await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            return user;
+        }
+
 
         private string HashPassword(string password)
         {
