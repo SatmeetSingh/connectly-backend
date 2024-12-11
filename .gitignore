@@ -1,6 +1,7 @@
 # Ignore build output
 bin/
 obj/
+Upload/
 
 # User-specific files
 *.rsuser
@@ -16,7 +17,6 @@ obj/
 .vs/
 *.ncrunchsolution
 *.ncrunchproject
-
 # ASP.NET Scaffolding
 .scaffolding
 

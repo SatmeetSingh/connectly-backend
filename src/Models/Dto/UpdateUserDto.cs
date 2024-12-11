@@ -17,7 +17,6 @@ namespace dating_app_backend.src.Models.Dto
           public string? Gender { get; set; }
     
           [Range(0, int.MaxValue)]
-          public string? ProfilePicture { get; set; }
           public IFormFile? file { get; set; }
 
     }
