@@ -40,7 +40,14 @@ namespace dating_app_backend.src.Service
             {
                return await _context.Users.FirstOrDefaultAsync(e => e.Id == id);
             }
-           
+        }
+
+        public async Task<List<UserModel>> SearchUserByUsername(string username)
+        {
+            username = username.Trim().ToLower();
+
+            var usersByName =await _context.Users.Where(u => u.Username.StartsWith(username)).Take(7).ToListAsync();
+            return usersByName;
         }
 
         public async Task<UserModel> SignUpUser(SignUpUserDto userDto)

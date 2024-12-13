@@ -1,14 +1,17 @@
-﻿using dating_app_backend.src.Models.Dto;
+﻿using Asp.Versioning;
+using dating_app_backend.src.Models.Dto;
 using dating_app_backend.src.Models.Entity;
 using dating_app_backend.src.Service;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using System.Collections;
 
 namespace dating_app_backend.src.Controllers
 {
+    [ApiVersion("1.0")]
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
@@ -39,12 +42,30 @@ namespace dating_app_backend.src.Controllers
             try {
                 var user = await _userService.GetUserById(id);
 
-                if (user == null){
-                    return NotFound();  
+                if (user == null) {
+                    return NotFound();
                 }
                 return Ok(user);
             }
-            catch (Exception ex){
+            catch (Exception ex) {
+                return StatusCode(500, "An unexpected error occurred. " + ex.Message);
+            }
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchUser(string username) {
+            if(username.Length == 0)
+            {
+                return Ok();
+            }
+            try { 
+            var users = await _userService.SearchUserByUsername(username);
+                if (users.Count == 0)
+                {
+                    return NotFound("No users found matching the username.");
+                }
+                return Ok(users);
+            } catch (Exception ex) {
                 return StatusCode(500, "An unexpected error occurred. " + ex.Message);
             }
         }
@@ -81,7 +102,7 @@ namespace dating_app_backend.src.Controllers
                 });
             }
         }
-
+        
         [HttpPatch("update/{id}")]
         public async Task<IActionResult> Updateuser([FromForm] UpdateUserDto updateDto , Guid id) {
             try

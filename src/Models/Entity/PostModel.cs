@@ -12,6 +12,7 @@ namespace dating_app_backend.src.Models.Entity
         string ImageUrl { get; set; } 
         int LikesCount { get; set; }
         int CommentCount { get; set; }
+        int ShaareCount { get; set; }
         Guid UserId { get; set; }
         int Share { get; set; }
         string? Location { get; set; }
@@ -26,16 +27,18 @@ namespace dating_app_backend.src.Models.Entity
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
-
         [Required]
         public string Content { get; set; } = String.Empty;
         [Required] 
         public string ImageUrl { get; set; } = String.Empty;
-        public int LikesCount { get; set; }
-        public int CommentCount { get; set; }
+        public int LikesCount { get; set; } = 0;
+        public int CommentCount { get; set; } = 0;
+        public int ShareCount { get; set; } = 0;
+        public string Location { get; set; } = String.Empty;
+
         public Guid UserId { get; set; }
-        public int Share { get; set; }
-        public string? Location { get; set; }
+        public int Share { get; set; } 
+        
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedDate { get; set; }
         
