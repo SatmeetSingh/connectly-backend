@@ -118,7 +118,7 @@ namespace dating_app_backend.src.Controllers
                 }
                 return Ok(new { message = "User logged in Successfully", user = User });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { error = "An error occurred while processing your request. Please try again later." });
             }

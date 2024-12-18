@@ -35,12 +35,11 @@ namespace dating_app_backend.src.Models.Entity
         public int CommentCount { get; set; } = 0;
         public int ShareCount { get; set; } = 0;
         public string Location { get; set; } = String.Empty;
-
+        
         public Guid UserId { get; set; }
         public int Share { get; set; } 
-        
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; } = DateTime.UtcNow;
         
         [ForeignKey(nameof(UserId))]
         public UserModel User { get; set; } = null!;

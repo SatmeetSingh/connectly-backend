@@ -26,10 +26,10 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-
-
-
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.MaxRequestBodySize = int.MaxValue; // Allow files up to 2 GB
+});
 
 builder.Services.AddSwaggerGen(c =>     
 {
@@ -54,7 +54,14 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/Upload/images"
 });
 
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Upload/Posts")),
+    RequestPath = "/Upload/Posts"
+});
+
 app.UseCors("AllowAll");
+//app.UseAuthentication();
 
 app.UseHttpsRedirection();
 

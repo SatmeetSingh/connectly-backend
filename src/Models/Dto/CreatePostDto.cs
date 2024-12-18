@@ -7,8 +7,7 @@ namespace dating_app_backend.src.Models.Dto
         [Required]
         public string Content { get; set; } 
         [Required]
-        public string ImageUrl { get; set; }
-
+        public IFormFile Image { get; set; }
         public string? Location { get; set; }
     }
 }

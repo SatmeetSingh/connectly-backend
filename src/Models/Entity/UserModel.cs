@@ -28,7 +28,6 @@ namespace dating_app_backend.src.Models.Entity
     [Table("Users")]
     public class UserModel : IUser
     {
-
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }

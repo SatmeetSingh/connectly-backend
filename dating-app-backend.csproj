@@ -8,13 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Upload\NewFolder\**" />
-    <Content Remove="Upload\NewFolder\**" />
-    <EmbeddedResource Remove="Upload\NewFolder\**" />
-    <None Remove="Upload\NewFolder\**" />
-  </ItemGroup>
-
-  <ItemGroup>
 	  <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
 	  <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 	  <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.1.1" />
@@ -32,9 +25,9 @@
 	  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
-  <ItemGroup>
+	<ItemGroup>
     <Folder Include="src\documentation\" />
-    <Folder Include="Upload\NewFolder1\" />
+    <Folder Include="Upload\images\" />
     <Folder Include="Upload\Posts\" />
   </ItemGroup>
 

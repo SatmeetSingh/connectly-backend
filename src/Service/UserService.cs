@@ -8,6 +8,7 @@ using BCrypt.Net;
 using System.Data.Common;
 using Azure;
 using Azure.Core;
+using System.Diagnostics;
 
 /*
  *  _context refers to an instance of your Entity Framework DbContext. 
@@ -38,7 +39,12 @@ namespace dating_app_backend.src.Service
                 throw new BadHttpRequestException("Id cannot be empty (Bad Request)", 400);
             } else
             {
-               return await _context.Users.FirstOrDefaultAsync(e => e.Id == id);
+                 var user  =  await _context.Users.FirstOrDefaultAsync(e => e.Id == id);
+                if(user == null)
+                {
+                    throw new ArgumentNullException(nameof(user), "User cannot be null");
+                }
+                return user;
             }
         }
 
@@ -55,6 +61,7 @@ namespace dating_app_backend.src.Service
              var User = new UserModel
              {
                  Username = userDto.Username,
+                 Name = userDto.Name,
                  Email = userDto.Email,
                  Password = HashPassword(userDto.Password)
              };
@@ -125,11 +132,15 @@ namespace dating_app_backend.src.Service
             }
             
             var user =  await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"No user found with email {email}");
+            }
             return user;
         }
 
 
-        private string HashPassword(string password)
+        private static string HashPassword(string password)
         {
             string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
             return hashedPassword;
