@@ -132,9 +132,9 @@ namespace dating_app_backend.src.Controllers
             try {
                 await _userService.DeleteUser(id);
                 return Ok(new {message = "User amd all related posts Deleted successfully"});            
-            }catch(Exception)
-            {
+            } catch(Exception) {
                 return StatusCode(500, new { error = "An error occurred while processing your request. Please try again later." });
+
             }
         }
     }

@@ -2,7 +2,7 @@
 using dating_app_backend.src.Models.Dto;
 using dating_app_backend.src.Models.Entity;
 using Microsoft.EntityFrameworkCore;
-
+using System.Text.RegularExpressions;
 /*
  * POST / likes(to add a like),
  * DELETE / likes /{ id} (to remove a like),
@@ -19,7 +19,6 @@ namespace dating_app_backend.src.Service
             _context = context;
 
         }
-
         public async Task<List<LikesModel>> GetLikes()
         {
             return await _context.Likes.ToListAsync();
@@ -143,7 +142,6 @@ namespace dating_app_backend.src.Service
         {
             var like = await _context.Likes
                 .FirstOrDefaultAsync(l => l.UserId == userId && l.PostId == postId);
-            Console.WriteLine(like);
             if (like == null)
             {
                 return false;

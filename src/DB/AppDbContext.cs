@@ -65,7 +65,7 @@ namespace dating_app_backend.src.DB
                 entity.HasOne(c => c.Post)
                 .WithMany(p => p.Comments)
                 .HasForeignKey(c => c.PostId)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<LikesModel>(entity =>

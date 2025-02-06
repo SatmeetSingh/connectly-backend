@@ -80,8 +80,6 @@ namespace dating_app_backend.src.Service
             return post;
         }
 
-
-
         public async Task<PostModel> AddPost(CreatePostDto createPost, Guid id)
         {
             var post = new PostModel
