@@ -1,10 +1,7 @@
 ﻿using dating_app_backend.src.Models.Dto;
-using dating_app_backend.src.Models.Entity;
 using dating_app_backend.src.Service;
 using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
 
 namespace dating_app_backend.src.Controllers
 {
@@ -29,6 +26,18 @@ namespace dating_app_backend.src.Controllers
             }
             return Ok(new {status = "success", posts = posts, count = posts.Count }); 
         }
+
+        //[HttpGet("{id}/likes")]
+        //public async Task<IActionResult> PostLikes()
+        //{
+        //    try {
+        //        return Ok();
+
+        //    }catch(Exception ex)
+        //    {
+        //        return StatusCode(500, "An unexpected error occurred: " + ex.Message);
+        //    }
+        //}
 
         [EnableCors("AllowAll")]
         [HttpGet("{id}")]
@@ -79,6 +88,40 @@ namespace dating_app_backend.src.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, "An error occurred: " + ex.Message);
+            }
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdatePost(UpdatePostDto updatePost,Guid id) {
+            try {
+                var post = await _postService.UpdatePost(updatePost, id);
+                return Ok(new { message = "Post updated Successfully",post = post });
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred: " + ex.Message);
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(Guid id)
+        {
+            if (id.GetType() == typeof(Guid))
+            {
+                try
+                {
+                   await _postService.DeletePost(id);
+                   return Ok(new { message = "Post is deleted successfully" });
+                }
+                catch (Exception)
+                {
+                    return StatusCode(500, new { error = "An error occurred while processing your request. Please try again later." });    
+                }
+            }
+            else
+            {
+                return Ok(new { message = "Id is not Guid" });
             }
 
         }

@@ -1,12 +1,9 @@
 ﻿using Asp.Versioning;
 using dating_app_backend.src.Models.Dto;
-using dating_app_backend.src.Models.Entity;
 using dating_app_backend.src.Service;
 using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using System.Collections;
 
 namespace dating_app_backend.src.Controllers
@@ -16,9 +13,11 @@ namespace dating_app_backend.src.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        public UserService _userService { get; set; }
-        public UsersController(UserService userService) {
+        private readonly ILogger<UsersController> _logger;
+        private UserService _userService { get; set; }
+        public UsersController(UserService userService , ILogger<UsersController> logger) {
             _userService = userService;
+            _logger = logger;
         }
        
         [HttpGet]
@@ -29,7 +28,7 @@ namespace dating_app_backend.src.Controllers
                 {
                     return NotFound("No Data Found");
                 }
-                return Ok(users);
+                return Ok(new { users =  users, count = users.Count});
             } catch(Exception ex) {
             return StatusCode(500, "An unexpected error occurred. "+ ex.Message);
             }
@@ -73,10 +72,13 @@ namespace dating_app_backend.src.Controllers
         [EnableCors("AllowAll")]
         [HttpPost("signup")]
         public async Task<IActionResult> CreateUser(SignUpUserDto userDto) {
-            try {
+            try 
+            {
                 var newUser =  await _userService.SignUpUser(userDto);
                 return Ok(new { message =  "User created Successfully"});
-            } catch (DbUpdateException ex) {
+            }
+            catch (DbUpdateException ex) 
+            {
                 return StatusCode(500, "An error occurred: " + ex.Message);
             }
         }
@@ -122,7 +124,18 @@ namespace dating_app_backend.src.Controllers
             {
                 return StatusCode(500, new { error = "An error occurred while processing your request. Please try again later." });
             }
+        }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(Guid id)
+        {
+            try {
+                await _userService.DeleteUser(id);
+                return Ok(new {message = "User amd all related posts Deleted successfully"});            
+            }catch(Exception)
+            {
+                return StatusCode(500, new { error = "An error occurred while processing your request. Please try again later." });
+            }
         }
     }
 }       

@@ -1,4 +1,3 @@
-using Asp.Versioning;
 using dating_app_backend.src.DB;
 using dating_app_backend.src.Service;
 using Microsoft.EntityFrameworkCore;
@@ -10,14 +9,24 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+
+builder.Logging.ClearProviders(); // Optionally clear the default providers
+builder.Logging.AddConsole(); // Add the Console Logger
+builder.Logging.AddDebug(); // Add the Debug Logger
+builder.Logging.AddEventSourceLogger(); // Add Event Source Logger (Windows-only)
+
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PostService>();
+builder.Services.AddScoped<LikesService>();
+builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<FileService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
+    options.AddPolicy("AllowAll", builder =>    
     {
         builder.AllowAnyOrigin() 
                .AllowAnyHeader()  

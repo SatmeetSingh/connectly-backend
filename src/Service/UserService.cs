@@ -1,14 +1,9 @@
 ﻿using dating_app_backend.src.DB;
 using dating_app_backend.src.Models.Dto;
 using dating_app_backend.src.Models.Entity;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using BCrypt.Net;
-using System.Data.Common;
-using Azure;
-using Azure.Core;
-using System.Diagnostics;
+
 
 /*
  *  _context refers to an instance of your Entity Framework DbContext. 
@@ -27,9 +22,23 @@ namespace dating_app_backend.src.Service
             _context = context ?? throw new ArgumentNullException(nameof(context));   
         }
 
-        public async Task<List<UserModel>> GetAllUsers()
+        public async Task<List<UserDto>> GetAllUsers()
         {
-            var Users = await _context.Users.ToListAsync();
+            var Users = await _context.Users.AsNoTracking().Select(u => new UserDto
+            {
+                Id = u.Id,
+                Name = u.Name,
+                Username = u.Username,
+                Email = u.Email,
+                ProfilePicture = u.ProfilePicture,
+                Bio = u.Bio,
+                Gender = u.Gender,
+                FollowersCount = u.FollowersCount,
+                FollowingCount = u.FollowingCount,
+                IsActive = u.IsActive,
+                CreatedDate = u.CreatedDate,
+                UpdatedDate = u.UpdatedDate
+            }).OrderByDescending(p => p.CreatedDate).ToListAsync();
             return Users;
         }
 
@@ -87,7 +96,7 @@ namespace dating_app_backend.src.Service
 
         public async Task<UserModel> UpdateUser([FromForm] UpdateUserDto updateDto ,Guid id) {
             var user = await GetUserById(id);
-            if (user == null)
+            if (user == null)   
             {
                 throw new KeyNotFoundException("user does not match");
             }
@@ -123,6 +132,14 @@ namespace dating_app_backend.src.Service
 
             await _context.SaveChangesAsync();
             return user;
+        }
+
+        public async Task DeleteUser(Guid id)
+        {
+            var user = await GetUserById(id);
+
+            _context.Remove(user);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<UserModel> GetUserByEmail(string email) {
