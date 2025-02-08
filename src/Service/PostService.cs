@@ -1,7 +1,9 @@
 ﻿using dating_app_backend.src.DB;
 using dating_app_backend.src.Models.Dto;
 using dating_app_backend.src.Models.Entity;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace dating_app_backend.src.Service
 {
@@ -15,10 +17,19 @@ namespace dating_app_backend.src.Service
             _fileService = fileService;
         }
 
-        public async Task<List<PostModel>> GetAllPosts()
+        public async Task<(int TotalPosts ,List<PostModel> Posts)> GetAllPosts(int page = 1, int limit = 10)
         {
-            var Posts  = await _context.Posts.AsNoTracking().ToListAsync();
-            return Posts;
+            int Page = Math.Max(page, 1);
+
+            var query =  _context.Posts.AsNoTracking();
+
+            int totalPosts =await query.CountAsync();
+            List<PostModel> posts =await query.OrderByDescending(p => p.CreatedDate)
+                                            .Skip((Page - 1) * limit)
+                                            .Take(limit)
+                                            .ToListAsync();
+
+            return ( totalPosts, posts);
         } 
 
 
@@ -80,13 +91,13 @@ namespace dating_app_backend.src.Service
             return post;
         }
 
-        public async Task<PostModel> AddPost(CreatePostDto createPost, Guid id)
+        public async Task<PostModel> AddPost(CreatePostDto createPost, Guid userId)
         {
             var post = new PostModel
             {
                 Content = createPost.Content,
                 Location = createPost.Location ?? "",
-                UserId = id
+                UserId = userId
             };
             var filePath = await _fileService.SavePostAsync(createPost.Image);
             post.ImageUrl = filePath;

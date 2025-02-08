@@ -1,7 +1,9 @@
 using dating_app_backend.src.DB;
 using dating_app_backend.src.Service;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Identity.Client;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<LikesService>();
 builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<FollowService>();
 builder.Services.AddScoped<FileService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -40,9 +43,20 @@ builder.Services.Configure<IISServerOptions>(options =>
     options.MaxRequestBodySize = int.MaxValue; // Allow files up to 2 GB
 });
 
+builder.Services.AddRateLimiter(option =>
+{
+    option.AddFixedWindowLimiter("Fixed", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 100;
+        opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 2;
+    });
+});
+
 builder.Services.AddSwaggerGen(c =>     
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Dating Api", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Connectly(Social Media Api)", Version = "v1" });
     c.MapType<IFormFile>(() => new OpenApiSchema { Type = "string", Format = "binary" });
 
 });
@@ -69,6 +83,9 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/Upload/Posts"
 });
 
+
+app.UseRouting(); // Routing
+app.UseRateLimiter();             // For rate Limiting
 app.UseCors("AllowAll");
 //app.UseAuthentication();
 

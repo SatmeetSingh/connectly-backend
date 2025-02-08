@@ -27,8 +27,9 @@
   </ItemGroup>
 
 	<ItemGroup>
-    <Folder Include="src\documentation\" />
     <Folder Include="Upload\images\" />
+    <Folder Include="Upload\images\" />
+    <Folder Include="Upload\Posts\" />
     <Folder Include="Upload\Posts\" />
   </ItemGroup>
 

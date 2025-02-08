@@ -19,7 +19,7 @@ namespace dating_app_backend.src.Controllers
             try
             {
                 var Likes = await _likesService.GetLikes();
-                return Ok(new { Message = "Success" , likes= Likes , count = Likes.Count});
+                return Ok(new { Message = "Success" , likes = Likes , count = Likes.Count});
             }
             catch (DbUpdateException ex)
             {
@@ -48,6 +48,7 @@ namespace dating_app_backend.src.Controllers
             }
         }
 
+        /* Allow users to see who liked a post */
         [HttpGet("{postId}/users")]
         public async Task<IActionResult> GetAllUserWhoLikedPost(Guid postId) {
             try {
@@ -63,18 +64,18 @@ namespace dating_app_backend.src.Controllers
             }
         }
 
-
+        /* Allow users to see posts they liked: */
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetAllPostsLikedByPost(Guid userId)
         {
             try
             {
-                if (postId == Guid.Empty)
+                if (userId == Guid.Empty)
                 {
                     return BadRequest("Invalid  post ID.");
                 }
                 var res = await _likesService.GetPostsLikedByUser(userId);
-                return Ok(new { message = "success", users = res, count = res.Count });
+                return Ok(new { message = "success", posts = res, count = res.Count });
             }
             catch (Exception err)
             {

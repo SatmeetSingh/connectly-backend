@@ -17,14 +17,14 @@ namespace dating_app_backend.src.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllPosts()
+        public async Task<IActionResult> GetAllPosts(int page, int limit)
         {
-            var posts = await _postService.GetAllPosts();
-            if(posts.Count == 0)
+            var res = await _postService.GetAllPosts(page,limit);
+            if (!res.Posts.Any())
             {
-                return Ok(new { status = "success", posts = posts, message = "No posts found" });
+                return NotFound("No posts found.");
             }
-            return Ok(new {status = "success", posts = posts, count = posts.Count }); 
+            return Ok(new {status = "success", posts = res.Posts, page = page , limit = limit , totalPosts = res.TotalPosts }); 
         }
 
         //[HttpGet("{id}/likes")]
@@ -78,11 +78,11 @@ namespace dating_app_backend.src.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> CreatePost(CreatePostDto createPost , Guid id)
+        public async Task<IActionResult> CreatePost(CreatePostDto createPost , Guid userId)
         {
             try
             {
-                var post = await _postService.AddPost(createPost , id);
+                var post = await _postService.AddPost(createPost , userId);
                 return Ok(new { message = "Post created Successfully" });
             }
             catch (Exception ex)

@@ -10,13 +10,16 @@ namespace dating_app_backend.src.DB
         public DbSet<UserModel> Users { get; set; }
         public DbSet<PostModel> Posts { get; set; }
         public DbSet<CommentModel> Comments { get; set; }
+        public DbSet<FollowModel> Follows { get; set; }
         public DbSet<LikesModel> Likes { get; set; }
+        public DbSet<MessageModel> Messages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             // Many-many RelationShip
+            // Define Key for FollowModel (composite key)
             modelBuilder.Entity<FollowModel>()
            .HasKey(f => new { f.FollowerId, f.FolloweeId });
 
@@ -24,13 +27,18 @@ namespace dating_app_backend.src.DB
                 .HasOne(f => f.Follower)
                 .WithMany(u => u.Following)
                 .HasForeignKey(f => f.FollowerId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);       // .restrict  --- look into it after completion 
 
             modelBuilder.Entity<FollowModel>()
                 .HasOne(f => f.Following)
                 .WithMany(u => u.Followers)
                 .HasForeignKey(f => f.FolloweeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);     // .restrict - look into it after completion  
+
+            modelBuilder.Entity<MessageModel>().HasKey(f => new { f.SenderId, f.RecieverId });
+
+            //modelBuilder.Entity<MessageModel>().HasO
+
 
             // One-to-Many Relationships
             modelBuilder.Entity<UserModel>(entity =>

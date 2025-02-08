@@ -17,9 +17,12 @@ namespace dating_app_backend.src.Service
     public class UserService
     {
         public readonly AppDbContext _context;
-        public UserService(AppDbContext context)
+        private readonly ILogger<UserService> _logger;
+
+        public UserService(AppDbContext context, ILogger<UserService> logger)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));   
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger;
         }
 
         public async Task<List<UserDto>> GetAllUsers()
@@ -40,6 +43,38 @@ namespace dating_app_backend.src.Service
                 UpdatedDate = u.UpdatedDate
             }).OrderByDescending(p => p.CreatedDate).ToListAsync();
             return Users;
+        }
+
+        public async Task<UserDto> GetUserProfile(Guid id)
+        {
+            if (id == Guid.Empty)
+            {
+                throw new BadHttpRequestException("Id cannot be empty (Bad Request)", 400);
+            }
+            else
+            {
+                var user = await _context.Users.Where(e => e.Id == id).Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Username = u.Username,
+                    Email = u.Email,
+                    ProfilePicture = u.ProfilePicture,
+                    Bio = u.Bio,
+                    Gender = u.Gender,
+                    FollowersCount = u.FollowersCount,
+                    FollowingCount = u.FollowingCount,
+                    IsActive = u.IsActive,
+                    CreatedDate = u.CreatedDate,
+                    UpdatedDate = u.UpdatedDate
+                }).FirstOrDefaultAsync();
+
+                if (user == null)
+                {
+                    throw new ArgumentNullException(nameof(user), "User cannot be null");
+                }
+                return user;
+            }
         }
 
         public async Task<UserModel> GetUserById(Guid id) {
@@ -67,7 +102,13 @@ namespace dating_app_backend.src.Service
 
         public async Task<UserModel> SignUpUser(SignUpUserDto userDto)
         {
-             var User = new UserModel
+            var user = await GetUserByEmail(userDto.Email);
+            if (user != null)
+            {
+                throw new KeyNotFoundException("user with same email should not exist match");
+            }
+
+            var User = new UserModel
              {
                  Username = userDto.Username,
                  Name = userDto.Name,
@@ -79,7 +120,7 @@ namespace dating_app_backend.src.Service
              return User;        
         }
         
-        public async Task<UserModel> LoginUser(LoginDto loginDto)
+        public async Task<UserModel> LoginUser([FromBody] LoginDto loginDto)
         {
             var user = await GetUserByEmail(loginDto.Email); 
             if (user == null)
@@ -137,7 +178,6 @@ namespace dating_app_backend.src.Service
         public async Task DeleteUser(Guid id)
         {
             var user = await GetUserById(id);
-
             _context.Remove(user);
             await _context.SaveChangesAsync();
         }

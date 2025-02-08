@@ -96,7 +96,6 @@ namespace dating_app_backend.src.Service
                                                                  Share = u.Share,
                                                                  CreatedDate = u.CreatedDate,
                                                                  UpdatedDate = u.UpdatedDate
-
                                                              })
                                                       .ToListAsync();
                 if (PostsLikedByUser.Count == 0)
@@ -119,37 +118,75 @@ namespace dating_app_backend.src.Service
 
         public async Task<bool> AddPostLikeAsync(Guid postId,Guid userId)
         {
-            var existingLike = await _context.Likes.FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
-
-            if (existingLike != null)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                throw new BadHttpRequestException("You have already liked this post.");
+                var existingLike = await _context.Likes.FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
+
+                if (existingLike != null)
+                {
+                    throw new BadHttpRequestException("You have already liked this post.");
+                }
+
+                var like = new LikesModel
+                {
+                    CreatedDate = DateTime.UtcNow,
+                    UserId = userId,
+                    PostId = postId,
+                };
+
+                _context.Likes.Add(like);
+
+                var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+                if(post != null)
+                {
+                    post.LikesCount++;
+                }
+                else
+                {
+                    throw new Exception("Post not found.");
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            } catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception("An error occurred while processing the like request", ex);
             }
-
-            var like = new LikesModel
-            {
-                CreatedDate = DateTime.UtcNow,
-                UserId = userId,
-                PostId = postId,
-            };
-
-            _context.Likes.Add(like);
-            await _context.SaveChangesAsync();
-            return true;
         }
 
         public async Task<bool> UnlikePostAsync(Guid userId, Guid postId)
         {
-            var like = await _context.Likes
-                .FirstOrDefaultAsync(l => l.UserId == userId && l.PostId == postId);
-            if (like == null)
+            using var transaction =await _context.Database.BeginTransactionAsync();
+            try
             {
-                return false;
-            }
+                var like = await _context.Likes
+                    .FirstOrDefaultAsync(l => l.UserId == userId && l.PostId == postId);
+                if (like == null)
+                {
+                    throw new Exception("User has not liked this post");
+                }
+                _context.Likes.Remove(like);
 
-            _context.Likes.Remove(like);
-            await _context.SaveChangesAsync();
-            return true;
+                var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+                if (post != null)
+                {
+                    post.LikesCount--;
+                }else
+                {
+                    throw new Exception("Post not found.");
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (Exception ex) {
+                await transaction.RollbackAsync();
+                throw new Exception("An error occurred while processing the unlike request", ex);
+
+            }
         }
         public async Task<bool> HasUserLikedPostAsync(Guid userId, Guid postId)
         {
