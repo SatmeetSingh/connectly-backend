@@ -2,7 +2,7 @@
 bin/
 obj/
 Upload/
-Migrations/
+
 
 # User-specific files
 *.rsuser
@@ -24,6 +24,7 @@ Migrations/
 # ASP.NET Core configuration files
 appsettings.Development.json
 appsettings.Production.json
+appsettings.json
 
 # Log files
 *.log

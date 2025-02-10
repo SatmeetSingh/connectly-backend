@@ -63,6 +63,9 @@ namespace dating_app_backend.src.Models.Entity
         public List<LikesModel> Likes { get; set; } = new List<LikesModel>();
         public List<FollowModel> Following { get; set; } = new List<FollowModel>();
         public List<FollowModel> Followers { get; set; } = new List<FollowModel>();
+        public Guid ConnectionId { get; set; } // For SignalR real-time tracking
+        public List<MessageModel> SentMessages { get; set; } =  new List<MessageModel>();
+        public List<MessageModel> ReceivedMessages { get; set; } = new List<MessageModel>();
     }
 
 }

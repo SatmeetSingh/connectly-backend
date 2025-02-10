@@ -21,7 +21,7 @@ namespace dating_app_backend.src.DB
             // Many-many RelationShip
             // Define Key for FollowModel (composite key)
             modelBuilder.Entity<FollowModel>()
-           .HasKey(f => new { f.FollowerId, f.FolloweeId });
+           .HasKey(f => new { f.FollowerId, f.FolloweeId });    // assumes a user can send only one follow to another user,
 
             modelBuilder.Entity<FollowModel>()
                 .HasOne(f => f.Follower)
@@ -35,12 +35,23 @@ namespace dating_app_backend.src.DB
                 .HasForeignKey(f => f.FolloweeId)
                 .OnDelete(DeleteBehavior.Cascade);     // .restrict - look into it after completion  
 
-            modelBuilder.Entity<MessageModel>().HasKey(f => new { f.SenderId, f.RecieverId });
+            modelBuilder.Entity<MessageModel>().HasKey(f => f.Id);
 
-            //modelBuilder.Entity<MessageModel>().HasO
+            modelBuilder.Entity<MessageModel>()
+                .HasOne(f => f.Sender)
+                .WithMany(u => u.SentMessages)
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);       // Prevent cascading delete
+
+            modelBuilder.Entity<MessageModel>()
+                .HasOne(m => m.Receiver)
+                .WithMany(u => u.ReceivedMessages)
+                .HasForeignKey(m => m.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
             // One-to-Many Relationships
+            // Users Model
             modelBuilder.Entity<UserModel>(entity =>
             {
                 entity.ToTable("Users");
@@ -49,6 +60,7 @@ namespace dating_app_backend.src.DB
                 entity.HasIndex(u => u.Username).IsUnique();
             });
 
+            // Post Model
             modelBuilder.Entity<PostModel>(entity =>
             {
                 entity.ToTable("Posts");
@@ -58,24 +70,22 @@ namespace dating_app_backend.src.DB
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            // Comment Model (Merged configurations)
             modelBuilder.Entity<CommentModel>(entity =>
              {
-                 entity.ToTable("Comments");
-                 entity.HasOne(c => c.User)
-                      .WithMany(u => u.Comments)
-                      .HasForeignKey(c => c.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.ToTable("Comments");
+                entity.HasOne(c => c.User)
+                 .WithMany(u => u.Comments)
+                 .HasForeignKey(c => c.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(c => c.Post)
+                 .WithMany(p => p.Comments)
+                 .HasForeignKey(c => c.PostId)
+                 .OnDelete(DeleteBehavior.Cascade);
              });
 
-            modelBuilder.Entity<CommentModel>(entity =>
-            {
-                entity.ToTable("Comments");
-                entity.HasOne(c => c.Post)
-                .WithMany(p => p.Comments)
-                .HasForeignKey(c => c.PostId)
-                .OnDelete(DeleteBehavior.Cascade);
-            });
-
+            // Likes Model (Merged configurations)
             modelBuilder.Entity<LikesModel>(entity =>
             {
                 entity.ToTable("Likes");
@@ -83,15 +93,10 @@ namespace dating_app_backend.src.DB
                      .WithMany(u => u.Likes)
                      .HasForeignKey(c => c.UserId)
                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<LikesModel>(entity =>
-            {
-                entity.ToTable("Likes");
                 entity.HasOne(c => c.Post)
-                .WithMany(p => p.Likes)
-                .HasForeignKey(c => c.PostId)
-                .OnDelete(DeleteBehavior.Cascade);
+                     .WithMany(p => p.Likes)
+                     .HasForeignKey(c => c.PostId)
+                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
     } 
