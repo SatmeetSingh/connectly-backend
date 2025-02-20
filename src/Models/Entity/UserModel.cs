@@ -57,13 +57,14 @@ namespace dating_app_backend.src.Models.Entity
         public DateTime? UpdatedDate { get; set; } = DateTime.UtcNow;
         public int FollowersCount { get; set; } = 0;
         public int FollowingCount { get; set; } = 0;
+        public int PostCount { get; set; } = 0;
         public bool IsActive { get; set; } = true;
         public List<PostModel> Posts { get; set; } = new List<PostModel>();
         public List<CommentModel> Comments { get; set; } = new List<CommentModel>();
         public List<LikesModel> Likes { get; set; } = new List<LikesModel>();
         public List<FollowModel> Following { get; set; } = new List<FollowModel>();
         public List<FollowModel> Followers { get; set; } = new List<FollowModel>();
-        public Guid ConnectionId { get; set; } // For SignalR real-time tracking
+        public string? ConnectionId { get; set; } // For SignalR real-time tracking
         public List<MessageModel> SentMessages { get; set; } =  new List<MessageModel>();
         public List<MessageModel> ReceivedMessages { get; set; } = new List<MessageModel>();
     }

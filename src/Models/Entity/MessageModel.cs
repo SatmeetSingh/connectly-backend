@@ -22,8 +22,6 @@ namespace dating_app_backend.src.Models.Entity
 
         [JsonIgnore]
         public UserModel Receiver { get; set; } = null!;
-
-
         public String MessageContent { get; set; } = string.Empty;
 
         [Precision(3)]

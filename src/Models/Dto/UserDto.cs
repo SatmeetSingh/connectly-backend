@@ -25,6 +25,7 @@ namespace dating_app_backend.src.Models.Dto
         public DateTime? UpdatedDate { get; set; } = DateTime.UtcNow;
         public int FollowersCount { get; set; } = 0;
         public int FollowingCount { get; set; } = 0;
+        public int PostCount { get; set; } = 0;
         public bool IsActive { get; set; } = true;
     }
 }

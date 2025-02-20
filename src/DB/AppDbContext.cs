@@ -23,17 +23,20 @@ namespace dating_app_backend.src.DB
             modelBuilder.Entity<FollowModel>()
            .HasKey(f => new { f.FollowerId, f.FolloweeId });    // assumes a user can send only one follow to another user,
 
+            modelBuilder.Entity<FollowModel>().HasIndex(f => new { f.FollowerId, f.FolloweeId }).IsUnique();
+
+
             modelBuilder.Entity<FollowModel>()
                 .HasOne(f => f.Follower)
                 .WithMany(u => u.Following)
                 .HasForeignKey(f => f.FollowerId)
-                .OnDelete(DeleteBehavior.Cascade);       // .restrict  --- look into it after completion 
+                .OnDelete(DeleteBehavior.NoAction);       // .restrict  --- look into it after completion 
 
             modelBuilder.Entity<FollowModel>()
                 .HasOne(f => f.Following)
                 .WithMany(u => u.Followers)
                 .HasForeignKey(f => f.FolloweeId)
-                .OnDelete(DeleteBehavior.Cascade);     // .restrict - look into it after completion  
+                .OnDelete(DeleteBehavior.NoAction);     // .restrict - look into it after completion  
 
             modelBuilder.Entity<MessageModel>().HasKey(f => f.Id);
 
@@ -77,7 +80,7 @@ namespace dating_app_backend.src.DB
                 entity.HasOne(c => c.User)
                  .WithMany(u => u.Comments)
                  .HasForeignKey(c => c.UserId)
-                 .OnDelete(DeleteBehavior.Cascade);
+                 .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasOne(c => c.Post)
                  .WithMany(p => p.Comments)
@@ -92,7 +95,8 @@ namespace dating_app_backend.src.DB
                 entity.HasOne(c => c.User)
                      .WithMany(u => u.Likes)
                      .HasForeignKey(c => c.UserId)
-                     .OnDelete(DeleteBehavior.Cascade);
+                     .OnDelete(DeleteBehavior.NoAction);
+
                 entity.HasOne(c => c.Post)
                      .WithMany(p => p.Likes)
                      .HasForeignKey(c => c.PostId)

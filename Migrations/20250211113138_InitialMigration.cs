@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace dating_app_backend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -50,14 +50,12 @@ namespace dating_app_backend.Migrations
                         name: "FK_Follow_Users_FolloweeId",
                         column: x => x.FolloweeId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Follow_Users_FollowerId",
                         column: x => x.FollowerId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -138,8 +136,7 @@ namespace dating_app_backend.Migrations
                         name: "FK_Comments_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -164,8 +161,7 @@ namespace dating_app_backend.Migrations
                         name: "FK_Likes_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -182,6 +178,12 @@ namespace dating_app_backend.Migrations
                 name: "IX_Follow_FolloweeId",
                 table: "Follow",
                 column: "FolloweeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Follow_FollowerId_FolloweeId",
+                table: "Follow",
+                columns: new[] { "FollowerId", "FolloweeId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Likes_PostId",

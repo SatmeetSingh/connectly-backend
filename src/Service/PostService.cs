@@ -28,7 +28,11 @@ namespace dating_app_backend.src.Service
                                             .Skip((Page - 1) * limit)
                                             .Take(limit)
                                             .ToListAsync();
-
+            if (posts == null)
+            {
+                throw new KeyNotFoundException("No posts found.");
+            }
+            
             return ( totalPosts, posts);
         } 
 
@@ -37,14 +41,14 @@ namespace dating_app_backend.src.Service
         {
             if (id == Guid.Empty)
             {
-                throw new BadHttpRequestException("Id cannot be empty (Bad Request)", 400);
+                throw new BadHttpRequestException("Id cannot be empty (Bad Request)");
             }
             else
             {
                 var Posts = await _context.Posts.Where(e => e.UserId == id).ToListAsync();
                 if (Posts.Count == 0)
                 {
-                    return new List<PostModel>();
+                    throw new KeyNotFoundException("It looks like you haven't posted anything yet");
                 }
                 return Posts;
             }
@@ -73,7 +77,6 @@ namespace dating_app_backend.src.Service
             {
                 throw new KeyNotFoundException("post does not match");
             }
-
             if (updatePost.LikesCount.HasValue)
             {
                 post.LikesCount = updatePost.LikesCount;
@@ -93,22 +96,54 @@ namespace dating_app_backend.src.Service
 
         public async Task<PostModel> AddPost(CreatePostDto createPost, Guid userId)
         {
-            var post = new PostModel
+            var transaction = _context.Database.BeginTransaction();
+            try
             {
-                Content = createPost.Content,
-                Location = createPost.Location ?? "",
-                UserId = userId
-            };
-            var filePath = await _fileService.SavePostAsync(createPost.Image);
-            post.ImageUrl = filePath;
 
-             _context.Posts.Add(post);
-            await _context.SaveChangesAsync();
-            return post;
+                var post = new PostModel
+                {
+                    Content = createPost.Content,
+                    Location = createPost.Location ?? "",
+                    UserId = userId
+                };
+                var filePath = await _fileService.SavePostAsync(createPost.Image);
+                post.ImageUrl = filePath;
+
+                var user =await _context.Users.FirstOrDefaultAsync(l => l.Id == userId);
+                if(user != null)
+                {
+                   user.PostCount++;
+                }
+
+                _context.Posts.Add(post);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return post;
+            }catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception($"Transaction Failure:  {ex}");
+            }
         }
 
-        public async Task DeletePost(Guid id) {
-            await _context.Posts.Where(p => p.Id == id).ExecuteDeleteAsync();
+        public async Task DeletePost(Guid id,Guid userId) {
+            var transaction = _context.Database.BeginTransaction();
+            try
+            {
+                await _context.Posts.Where(p => p.Id == id && p.UserId == userId).ExecuteDeleteAsync();
+
+                var user = await _context.Users.FirstOrDefaultAsync(l => l.Id == userId);
+                if (user != null)
+                {
+                    user.PostCount--;
+                }
+                await transaction.CommitAsync();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

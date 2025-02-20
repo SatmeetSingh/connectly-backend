@@ -8,10 +8,10 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddLogging();
 // Add services to the container.
 
 builder.Services.AddControllers();
-
 
 builder.Logging.ClearProviders(); // Optionally clear the default providers
 builder.Logging.AddConsole(); // Add the Console Logger
@@ -22,10 +22,13 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<LikesService>();
 builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<FollowService>();
 builder.Services.AddScoped<FileService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
+
 
 builder.Services.AddCors(options =>
 {
@@ -36,6 +39,7 @@ builder.Services.AddCors(options =>
                .AllowAnyMethod(); 
     });
 });
+builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.Configure<IISServerOptions>(options =>
@@ -83,16 +87,22 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/Upload/Posts"
 });
 
+app.UseWebSockets();        // Enable WebSockets
+app.UseRouting();
 
-app.UseRouting(); // Routing
-app.UseRateLimiter();             // For rate Limiting
-app.UseCors("AllowAll");
+app.UseCors("AllowAll");          // Always b/w Routing and Authoriztion
+
+
+app.UseAuthorization();
+app.UseRateLimiter();             
 //app.UseAuthentication();
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
 app.MapControllers();
+
+
+app.MapHub<MessageHub>("/ChatHub");
+
+
 
 app.Run();

@@ -3,6 +3,7 @@ using dating_app_backend.src.Models.Dto;
 using dating_app_backend.src.Service;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;
 
@@ -21,20 +22,42 @@ namespace dating_app_backend.src.Controllers
         }
        
         [HttpGet]
-        public  async Task<IActionResult> GetAllUsers() {
-            _logger.LogInformation("Fetching all users in database");
+        public  async Task<IActionResult> GetAllUsers(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default)
+        {
+            if (page < 1 || pageSize < 1 || pageSize > 100)
+            {
+                _logger.LogWarning($"Invalid pagination parameters received: Page={page}, PageSize={pageSize}");
+                return BadRequest("Invalid pagination parameters.");
+            }
             try
             {
-                var users = await _userService.GetAllUsers();
-                if (users.Count == 0)
+                var result = await _userService.GetAllUsers(page, pageSize, cancellationToken);
+
+                if (!result.users.Any())
                 {
-                    _logger.LogWarning("Users not found in database");
-                    return NotFound("Users not found");
+                    return Ok(new { users = Array.Empty<object>(), count = 0 });
                 }
 
-                _logger.LogInformation("Successfully fetched users ");
-                return Ok(new { users =  users, count = users.Count});
-            } catch(Exception ex) {
+                return Ok(new
+                {
+                    Users = result.users,
+                    Count = result.users.Count,
+                    TotalCount = result.totalCount,
+                    NextPage = (page * pageSize < result.totalCount) ? page + 1 : (int?)null,
+                    PrevPage = (page > 1) ? page - 1 : (int?)null
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Request timed out while fetching users.");
+                return StatusCode(408, "Request timed out.");
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Database connection error while fetching users.");
+                return StatusCode(503, "Database unavailable. Please try again later.");
+            }
+            catch (Exception ex) {
                 _logger.LogError(ex, "An error occurred while fetching user");
                 return StatusCode(500, "An unexpected error occurred. "+ ex.Message);
             }
@@ -58,17 +81,16 @@ namespace dating_app_backend.src.Controllers
         }
 
         [HttpGet("{id}/profile")]
-        public async Task<IActionResult>  GetUserProfile(Guid id)
+        public async Task<IActionResult> GetUserProfile(Guid id)
         {
             try
             {
                 var user = await _userService.GetUserProfile(id);
 
-                if (user == null)
-                {
-                    return NotFound();
-                }
                 return Ok(user);
+            }catch(ArgumentNullException ex)
+            {
+                return NotFound(new {message = ex });
             }
             catch (Exception ex)
             {
@@ -102,9 +124,19 @@ namespace dating_app_backend.src.Controllers
                 var newUser =  await _userService.SignUpUser(userDto);
                 return Ok(new { message =  "User created Successfully"});
             }
+            catch (KeyNotFoundException ex)
+            {
+                return StatusCode(400, "Bad Request: " + ex.Message);
+            }
             catch (DbUpdateException ex) 
             {
+
                 return StatusCode(500, "An error occurred: " + ex.Message);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, "An error occurred: " + ex.Message);
+
             }
         }
 

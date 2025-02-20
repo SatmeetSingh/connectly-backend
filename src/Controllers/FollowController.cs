@@ -10,9 +10,11 @@ namespace dating_app_backend.src.Controllers
     {
         private FollowService _followService {  get; set; }
 
-        public FollowController(FollowService followService)
+        public ILogger<FollowController> _logger { get; set; }
+        public FollowController(FollowService followService, ILogger<FollowController> logger)
         {
             _followService = followService;
+            _logger = logger;   
         }
 
         [HttpGet("{userId}/followers")]
@@ -42,12 +44,34 @@ namespace dating_app_backend.src.Controllers
             }
         }
 
+        [HttpGet("{followerId}/follow-status/{followeeId}")]
+        public async Task<IActionResult> CheckFollowStatus(Guid followerId, Guid followeeId)
+        {
+            try
+            {
+                var res = await _followService.CheckFollowStatus(followerId, followeeId);
+                return Ok(new { message = "Success", isFollowing = res });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Unexpected Error occur : {ex}");
+            }
+        }
+
         [HttpPost("{followerId}/follow/{followeeId}")]
         public async Task<IActionResult> FollowOtherUsers(Guid followerId,Guid followeeId) {
             try {
                var res =   await _followService.FollowOtherUser(followerId, followeeId);
                 return Ok(new { message = "Success"  , data = res});
-            }catch(Exception ex) {
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "An invalid operation occurred.");
+                return StatusCode(400, "Invalid operation. Please check your request and try again.");
+            }
+
+            catch (Exception ex)
+            {
                 return StatusCode(500, $"Unexpected Error occur : {ex}");
             }
         }
@@ -57,8 +81,9 @@ namespace dating_app_backend.src.Controllers
         {
             try {
                 var res = await _followService.UnFollowOtherUser(followerId, followeeId);
-                return Ok(new { message = res });
-            }catch(Exception ex) {
+                return Ok(new { message = "Success", data = res });
+            }
+            catch(Exception ex) {
                 return StatusCode(500, $"Unexpected Error occur : {ex}");
             }
         }

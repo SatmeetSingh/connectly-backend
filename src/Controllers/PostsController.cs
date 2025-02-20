@@ -10,34 +10,38 @@ namespace dating_app_backend.src.Controllers
     public class PostsController : ControllerBase
     {
         public PostService _postService { get; set; }
+        public ILogger<PostsController> _logger { get; set; }
 
-        public PostsController(PostService postService)
+        public PostsController(PostService postService, ILogger<PostsController> logger)
         {
             _postService = postService;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAllPosts(int page, int limit)
         {
-            var res = await _postService.GetAllPosts(page,limit);
-            if (!res.Posts.Any())
+            try
             {
-                return NotFound("No posts found.");
-            }
+
+            var res = await _postService.GetAllPosts(page,limit);
+           
             return Ok(new {status = "success", posts = res.Posts, page = page , limit = limit , totalPosts = res.TotalPosts }); 
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex });
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred: " + ex.Message,
+                    stackTrace = ex.StackTrace
+                });
+            }
         }
 
-        //[HttpGet("{id}/likes")]
-        //public async Task<IActionResult> PostLikes()
-        //{
-        //    try {
-        //        return Ok();
-
-        //    }catch(Exception ex)
-        //    {
-        //        return StatusCode(500, "An unexpected error occurred: " + ex.Message);
-        //    }
-        //}
 
         [EnableCors("AllowAll")]
         [HttpGet("{id}")]
@@ -46,14 +50,22 @@ namespace dating_app_backend.src.Controllers
             try
             { 
             var post = await _postService.GetPostById(id);
-            if (post == null)
-            {
-                return NotFound();
-            }
+          
             return Ok(post);
-            }catch(Exception ex)
+            }
+            catch (ArgumentNullException ex)
             {
-                return StatusCode(500, "An unexpected error occurred: " + ex.Message);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (BadHttpRequestException ex){
+                return BadRequest(new { message = ex.Message });
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, new { 
+                    message = "An unexpected error occurred: " + ex.Message,
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
@@ -64,21 +76,29 @@ namespace dating_app_backend.src.Controllers
             try
             {
                 var posts = await _postService.GetAllPostByUser(id);
-                if (posts.Count == 0)
-                {
-                    return NotFound(new {message = "It looks like you haven't posted anything yet" });
-                }
                 return Ok(new { posts = posts , count = posts.Count});
+            }
+            catch(BadHttpRequestException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message}); 
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "An unexpected error occurred: " + ex.Message);
+                return StatusCode(500, new { 
+                    message = "An unexpected error occurred: " + ex.Message,
+                    stackTrace = ex.StackTrace
+                });
+
             }
         }
 
 
         [HttpPost]
-        public async Task<IActionResult> CreatePost(CreatePostDto createPost , Guid userId)
+        public async Task<IActionResult> CreatePost([FromForm] CreatePostDto createPost , Guid userId)
         {
             try
             {
@@ -87,7 +107,11 @@ namespace dating_app_backend.src.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "An error occurred: " + ex.Message);
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred: " + ex.Message,
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
@@ -96,34 +120,37 @@ namespace dating_app_backend.src.Controllers
             try {
                 var post = await _postService.UpdatePost(updatePost, id);
                 return Ok(new { message = "Post updated Successfully",post = post });
-
+            }
+            catch(KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "An error occurred: " + ex.Message);
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred: " + ex.Message,
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(Guid id)
+        public async Task<IActionResult> DeleteUser(Guid id,Guid userId)
         {
-            if (id.GetType() == typeof(Guid))
+            try
             {
-                try
-                {
-                   await _postService.DeletePost(id);
-                   return Ok(new { message = "Post is deleted successfully" });
-                }
-                catch (Exception)
-                {
-                    return StatusCode(500, new { error = "An error occurred while processing your request. Please try again later." });    
-                }
+                await _postService.DeletePost(id,userId);
+                return Ok(new { message = "Post is deleted successfully" });
             }
-            else
+            catch (Exception ex)
             {
-                return Ok(new { message = "Id is not Guid" });
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred: " + ex.Message,
+                    stackTrace = ex.StackTrace
+                });    
             }
-
         }
     }
 }

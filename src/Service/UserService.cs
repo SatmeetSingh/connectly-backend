@@ -2,7 +2,9 @@
 using dating_app_backend.src.Models.Dto;
 using dating_app_backend.src.Models.Entity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Threading;
 
 
 /*
@@ -25,24 +27,39 @@ namespace dating_app_backend.src.Service
             _logger = logger;
         }
 
-        public async Task<List<UserDto>> GetAllUsers()
+        public async Task<(List<UserDto> users, int totalCount)> GetAllUsers(int page, int pageSize, CancellationToken cancellationToken)
         {
-            var Users = await _context.Users.AsNoTracking().Select(u => new UserDto
+            int totalCount = await _context.Users
+                            .AsNoTracking()
+                            .Select(u => 1)  // Optimized Count
+                            .FirstOrDefaultAsync(cancellationToken);
+            if (totalCount == 0)
             {
-                Id = u.Id,
-                Name = u.Name,
-                Username = u.Username,
-                Email = u.Email,
-                ProfilePicture = u.ProfilePicture,
-                Bio = u.Bio,
-                Gender = u.Gender,
-                FollowersCount = u.FollowersCount,
-                FollowingCount = u.FollowingCount,
-                IsActive = u.IsActive,
-                CreatedDate = u.CreatedDate,
-                UpdatedDate = u.UpdatedDate
-            }).OrderByDescending(p => p.CreatedDate).ToListAsync();
-            return Users;
+                return (new List<UserDto>(), 0);
+            }
+
+            var users = await _context.Users.OrderBy(u => u.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .AsNoTracking()
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Username = u.Username,
+                    Email = u.Email,
+                    ProfilePicture = u.ProfilePicture,
+                    Bio = u.Bio,
+                    Gender = u.Gender,
+                    FollowersCount = u.FollowersCount,
+                    FollowingCount = u.FollowingCount,
+                    PostCount = u.PostCount,
+                    IsActive = u.IsActive,
+                    CreatedDate = u.CreatedDate,
+                    UpdatedDate = u.UpdatedDate
+                }).OrderByDescending(p => p.CreatedDate).ToListAsync(cancellationToken);
+
+            return (users, totalCount);
         }
 
         public async Task<UserDto> GetUserProfile(Guid id)
@@ -64,6 +81,7 @@ namespace dating_app_backend.src.Service
                     Gender = u.Gender,
                     FollowersCount = u.FollowersCount,
                     FollowingCount = u.FollowingCount,
+                    PostCount = u.PostCount,
                     IsActive = u.IsActive,
                     CreatedDate = u.CreatedDate,
                     UpdatedDate = u.UpdatedDate
@@ -102,24 +120,39 @@ namespace dating_app_backend.src.Service
 
         public async Task<UserModel> SignUpUser(SignUpUserDto userDto)
         {
-            var user = await GetUserByEmail(userDto.Email);
-            if (user != null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                throw new KeyNotFoundException("user with same email should not exist match");
+                try
+                {
+                    bool userExists = await _context.Users.AnyAsync(u => u.Email == userDto.Email && u.Username == userDto.Username);
+                    if (userExists)
+                    {
+                        throw new KeyNotFoundException("A user with the same email or same username already exists.");
+                    }
+
+                    var user = new UserModel
+                    {
+                        Username = userDto.Username,
+                        Name = userDto.Name,
+                        Email = userDto.Email,
+                        Password = HashPassword(userDto.Password)
+                    };
+                   
+
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    return user;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
 
-            var User = new UserModel
-             {
-                 Username = userDto.Username,
-                 Name = userDto.Name,
-                 Email = userDto.Email,
-                 Password = HashPassword(userDto.Password)
-             };
-            _context.Users.Add(User);
-             await _context.SaveChangesAsync();
-             return User;        
         }
-        
+
         public async Task<UserModel> LoginUser([FromBody] LoginDto loginDto)
         {
             var user = await GetUserByEmail(loginDto.Email); 
@@ -177,9 +210,28 @@ namespace dating_app_backend.src.Service
 
         public async Task DeleteUser(Guid id)
         {
-            var user = await GetUserById(id);
-            _context.Remove(user);
-            await _context.SaveChangesAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _context.Likes.Where(l => l.UserId == id).ExecuteDeleteAsync();     
+
+                await _context.Comments.Where(c => c.UserId == id).ExecuteDeleteAsync();  
+
+                await _context.Follows.Where(f => f.FollowerId == id || f.FolloweeId == id).ExecuteDeleteAsync();
+
+                var user = await _context.Users.FindAsync(id);
+                if (user != null)
+                {
+                    _context.Users.Remove(user);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<UserModel> GetUserByEmail(string email) {
@@ -199,7 +251,7 @@ namespace dating_app_backend.src.Service
 
         private static string HashPassword(string password)
         {
-            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password,10);   // 10 salt
             return hashedPassword;
         }
         

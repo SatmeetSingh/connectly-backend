@@ -34,17 +34,31 @@ namespace dating_app_backend.src.Service
         }
 
         public async Task<CommentModel> PostComment(Guid userId , Guid postId, string content ) {
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            var newComment = new CommentModel {
-                CreatedDate = DateTime.UtcNow,
-                UserId = userId,
-                PostId = postId,
-                Content = content
-            };
-            Console.WriteLine($"Created a comment: {newComment}");
-            _context.Comments.Add(newComment);
-            await _context.SaveChangesAsync();
-            return newComment;
+            try
+            {
+                var newComment = new CommentModel {
+                    CreatedDate = DateTime.UtcNow,
+                    UserId = userId,
+                    PostId = postId,
+                    Content = content
+                };
+                _context.Comments.Add(newComment);
+
+                var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+                if (post != null) {
+                    post.CommentCount++;
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return newComment;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception("An error occurred while processing the comment request", ex);
+            }
         }
 
         /*
@@ -56,27 +70,62 @@ namespace dating_app_backend.src.Service
          * The system should handle cases where the comment is missing.
          */
 
-        public async Task<bool> DeleteComment(Guid userId,Guid commentId) {
-           var comment = await _context.Comments.FirstOrDefaultAsync(l => l.UserId == userId && l.Id == commentId);
-            if(comment == null)
+        public async Task<bool> DeleteComment(Guid userId, Guid commentId, Guid postId) {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
             {
-                return false;
+                var comment = await _context.Comments.FirstOrDefaultAsync(l => l.UserId == userId && l.Id == commentId);
+                if(comment == null)
+                {
+                    return false;
+                }
+                _context.Comments.Remove(comment);
+
+                var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+                if (post != null)
+                {
+                    post.CommentCount--;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception("An error occurred while deleting the comment request", ex);
             }
-            _context.Comments.Remove(comment);
-            await _context.SaveChangesAsync();
-            return true;
         }
 
         public async Task<bool> DeleteComments(Guid userId, Guid postId)
         {
-            var comments = await _context.Comments.Where(l => l.UserId == userId && l.PostId == postId).ToListAsync();
-            if (comments == null)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
             {
-                return false;
+                var comments = await _context.Comments.Where(l => l.UserId == userId && l.PostId == postId).ToListAsync();
+                if (comments == null)
+                {
+                    return false;
+                }
+                _context.Comments.RemoveRange(comments);
+
+                var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+                if (post != null)
+                {
+                     post.CommentCount = post.CommentCount -  comments.Count ;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception("An error occurred while deleting the comments request", ex);
             }
-            _context.Comments.RemoveRange(comments);
-            await _context.SaveChangesAsync();
-            return true;
         }
     }
 }

@@ -12,8 +12,8 @@ using dating_app_backend.src.DB;
 namespace dating_app_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250210064422_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250218055817_UserModelUpdate")]
+    partial class UserModelUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -68,6 +68,9 @@ namespace dating_app_backend.Migrations
                     b.HasKey("FollowerId", "FolloweeId");
 
                     b.HasIndex("FolloweeId");
+
+                    b.HasIndex("FollowerId", "FolloweeId")
+                        .IsUnique();
 
                     b.ToTable("Follow");
                 });
@@ -185,8 +188,8 @@ namespace dating_app_backend.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<Guid>("ConnectionId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("ConnectionId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasPrecision(3)
@@ -219,6 +222,9 @@ namespace dating_app_backend.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PostCount")
+                        .HasColumnType("int");
 
                     b.Property<string>("ProfilePicture")
                         .IsRequired()
@@ -256,7 +262,7 @@ namespace dating_app_backend.Migrations
                     b.HasOne("dating_app_backend.src.Models.Entity.UserModel", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Post");
@@ -269,13 +275,13 @@ namespace dating_app_backend.Migrations
                     b.HasOne("dating_app_backend.src.Models.Entity.UserModel", "Following")
                         .WithMany("Followers")
                         .HasForeignKey("FolloweeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("dating_app_backend.src.Models.Entity.UserModel", "Follower")
                         .WithMany("Following")
                         .HasForeignKey("FollowerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Follower");
@@ -294,7 +300,7 @@ namespace dating_app_backend.Migrations
                     b.HasOne("dating_app_backend.src.Models.Entity.UserModel", "User")
                         .WithMany("Likes")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Post");

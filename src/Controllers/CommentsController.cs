@@ -58,10 +58,10 @@ namespace dating_app_backend.src.Controllers
         }
 
         [HttpDelete("{userId}/comment/{commentId}")]
-        public async Task<IActionResult> DeleteCommentOnPost(Guid userId , Guid commentId)
+        public async Task<IActionResult> DeleteCommentOnPost(Guid userId , Guid commentId, Guid postId)
         {
             try {
-                var res = await _commentService.DeleteComment(userId, commentId);
+                var res = await _commentService.DeleteComment(userId, commentId, postId);
                 if (!res)
                 {
                     return NotFound("Comment not found.");

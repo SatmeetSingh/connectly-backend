@@ -51,11 +51,29 @@ namespace dating_app_backend.src.Service
             return following;
         }
 
+        public async Task<Boolean> CheckFollowStatus(Guid followerId,Guid followeeId)
+        {
+            var status = await _context.Follows.AnyAsync(l => l.FollowerId == followerId && l.FolloweeId == followeeId);
+            if (status)
+            {
+                return true;
+            }else
+            {
+                return false;
+            }
+        }
+
         public async Task<FollowModel> FollowOtherUser(Guid followerId , Guid followeeId) {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+
+                if (followerId == followeeId)
+                {
+                    throw new InvalidOperationException("A user cannot follow themselves.");
+                }
+
                 // Check if user already following the target
                 var follow = await _context.Follows
                                            .AnyAsync(l => l.FollowerId == followerId && l.FolloweeId == followeeId);
